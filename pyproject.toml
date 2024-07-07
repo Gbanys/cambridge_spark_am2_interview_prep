@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "cambridge-spark-am2-practice"
+version = "0.1.0"
+description = ""
+authors = ["Giedrius Banys <giedrius.banys@i4-insight.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+jupyter = "^1.0.0"
+pandas = "^2.2.2"
+openai = "^1.35.10"
+fastapi = "^0.111.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

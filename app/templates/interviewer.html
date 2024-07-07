@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('../static/data-science-background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+        .question-in-question-bank{
+            padding: 10px;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .question-in-question-bank:hover{
+            background-color: gray;
+        }
+        .answer-in-answer-box{
+            margin: 20px;
+            float: left;
+            text-align: left;
+        }
+
+        #custom-answer-submit-button{
+            background-color: #1d9b95;
+            color: white;
+            border: none;
+            padding: 5px;
+            transition: 0.3s;
+        }
+
+        #custom-answer-submit-button:hover{
+            background-color: #00f75f;
+        }
+
+        ::placeholder {
+          color: white;
+          opacity: 1; /* Firefox */
+        }
+
+        ::-ms-input-placeholder { /* Edge 12-18 */
+          color: white;
+        }
+
+        #custom-question{
+            background-color: gray;
+            border: none;
+            color: white;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js"></script>
+    <script>
+        var ws = new WebSocket("ws://localhost:80/ws");
+        ws.onopen = function (event) {
+            ws.send(JSON.stringify({'status': 'get_all_questions'}));
+        };
+        ws.onmessage = function (event) {
+            data = JSON.parse(event.data);
+            if (data.type === 'get_all_questions') {
+                question_bank = document.getElementById("question-bank");
+                for (let i = 0; i < data.questions.length; i++) {
+                    const question = data.questions[i];
+                    childElement = document.createElement("p");
+                    childElement.innerText = question;
+                    childElement.className = "question-in-question-bank";
+                    childElement.onclick = function () {
+                        submitQuestionAndGetLLMResponse(question);
+                    };
+                    question_bank.appendChild(childElement);
+                }
+            } else if (data.type === 'generate_response') {
+                answer_box = document.getElementById("answer-box");
+                childElement = document.createElement("p");
+                childElement.className = "answer-in-answer-box";
+                answer_box.appendChild(childElement);
+
+                var i = 0;
+                var txt = data.response;
+                var speed = 60;
+
+                function typeWriter() {
+                    if (i < txt.length) {
+                        childElement.innerHTML += txt.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, speed);
+                    }
+                }
+
+                typeWriter();
+                convertTextToSpeech(data.response);
+            }
+        }
+
+        function submitQuestionAndGetLLMResponse(question) {
+            answer_box = document.getElementById("answer-box");
+            answer_box.innerHTML = `<p style="text-align: center; margin: 15px;">${question}</p>`;
+            ws.send(JSON.stringify({'status': 'get_llm_response', 'question': question}))
+        }
+
+        const subscriptionKey = '{{subscriptionKey}}';
+        const region = '{{region}}';
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, region);
+        speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoWav;
+        const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
+        let audioSource = null; // Store the audio source globally
+
+        function convertTextToSpeech(text) {
+            const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+                <voice name="en-US-AriaNeural">${text}</voice>
+            </speak>`;
+            synthesizer.speakSsmlAsync(
+                ssml,
+                result => {
+                    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        audioContext.decodeAudioData(result.audioData, buffer => {
+                            // Stop the previous audio playback
+                            if (audioSource !== null) {
+                                audioSource.stop();
+                            }
+                            audioSource = audioContext.createBufferSource();
+                            audioSource.buffer = buffer;
+                            audioSource.connect(audioContext.destination);
+                            audioSource.start(0);
+                        }, error => {
+                            console.error(`Error decoding audio data: ${error}`);
+                        });
+                    }
+                },
+                error => {
+                    console.error(`Error: ${error}`);
+                }
+            );
+        }
+    </script>
+</head>
+<body>
+<div style="position: relative; margin: 40px;">
+    <div style="position: relative; display: inline-block;">
+        <h1 style="color: rgb(56 123 133)">Ask the LLM</h1>
+    </div>
+    <div style="position: relative; display: inline-block; float: right;">
+        <h1 style="text-align: center; font-size: 40px; position: relative; display: inline-block; margin-right: 20px;">
+            Cambridge Spark</h1>
+        <img style="position: relative; display: inline-block; vertical-align: middle;"
+             src="../static/cambridge_spark_logo.png" height="75" width="75">
+    </div>
+    <div style="margin: 40px; background-color: #044d59; padding: 20px; border-radius: 20px;">
+        <p>Welcome to the AM2 LLM interview simulation. Here you can ask the GPT model questions that are likely to come
+            up in the AM2 exam. But before
+            we ask any questions, we want to give the ChatBot some personality. For the demo, we will assume that the
+            name of our candidate is Alice. She
+            has extensive experience working in AI and in the retail sector. She worked on numerous projects and she
+            wants to put her skills to the test
+            There is no time limit so ask as many questions as you like and learn from her responses.
+        </p>
+    </div>
+    <div style="margin: 40px; text-align: center; background-color: #044d59; border-radius: 20px;">
+        <div style="position: relative; display: inline-block; width: 45%; vertical-align: top; padding-bottom: 100px;">
+            <h5 style="text-align: left; padding: 20px;">Ask a question from the AM2 question bank:</h5>
+            <div style="background-color: #58757d; border-radius: 10px; padding-top: 50px; padding-bottom: 50px; overflow-y: scroll; min-height: 500px; max-height: 500px;">
+                <div id="question-bank" style="background-color: black; margin-left: 50px; margin-right: 50px; border-radius: 10px;">
+                </div>
+            </div>
+        </div>
+        <div style="position: relative; display: inline-block; width: 45%; vertical-align: top;">
+            <h5 style="text-align: left; padding: 20px;">Or ask your own question and view Alice responses:</h5>
+            <div>
+                <input type="text" id="custom-question" name="custom-question" placeholder="Ask your own question" style="width: 80%; padding: 5px;">
+                <button id="custom-answer-submit-button" onclick="submitQuestionAndGetLLMResponse(document.getElementById('custom-question').value);">Submit</button>
+                <div id="answer-box" style="min-height: 500px; max-height: 500px; background-color: black; border-radius: 10px; margin-left: 20px; margin-right: 20px; margin-top: 0; overflow-y: scroll;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<footer style="background-color: rgb(3, 64, 75); text-align: center; margin-bottom: 0;">
+     <p style="padding: 40px;">© Copyright 2024 by Cambridge Spark Ltd | Terms | Privacy Policy | Cookies Policy</p>
+</footer>
+<script>
+    const inputBox = document.getElementById('custom-question');
+    inputBox.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            submitQuestionAndGetLLMResponse(inputBox.value);
+            inputBox.value = '';
+        }
+    });
+</script>
+</html>

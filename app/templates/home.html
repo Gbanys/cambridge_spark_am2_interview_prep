@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('../static/data-science-background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+        .options:hover{
+            color: #1d9b95;
+            cursor: pointer;
+            opacity: 90%;
+        }
+    </style>
+</head>
+<body>
+<div style="position: relative; margin-top: 80px; text-align: center;">
+<h1 style="text-align: center; font-size: 70px; position: relative; display: inline-block; margin-right: 50px;">Cambridge Spark</h1>
+<img style="position: relative; display: inline-block; vertical-align: middle;" src="../static/cambridge_spark_logo.png">
+</div>
+<div style="position: relative;">
+    <h2 style="text-align: center;">Who are you?</h2>
+</div>
+<div style="margin-top: 50px; width: 80%; text-align: center; margin-left: auto; margin-right: auto;">
+    <div>
+        <div class="options" style="background-color: #387b85; position: relative; display: inline-block; font-size: 30px; margin: 60px; padding: 40px; border-radius: 25px;" onclick="location.href=`{{ url_for('return_interview_page')}}`;">I am an interviewer</div>
+        <div class="options" style="background-color: #387b85; position: relative; display: inline-block; font-size: 30px; margin: 60px; padding: 40px; border-radius: 25px;" onclick="location.href=`{{ url_for('return_interviee_settings_page')}}`;">I am an interviewee</div>
+    </div>
+</div>
+</body>
+</html>

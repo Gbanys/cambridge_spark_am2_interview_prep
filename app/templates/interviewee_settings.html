@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('../static/data-science-background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+        .checkbox-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 25px;
+            width: 25px;
+            background-color: transparent;
+            border: 2px solid #000;
+        }
+        .main {
+            display: block;
+            position: relative;
+            padding-left: 45px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .main input[type=checkbox] {
+            visibility: hidden;
+        }
+
+        .checkbox-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 25px;
+            width: 25px;
+            background-color: transparent;
+            border: 2px solid #000;
+        }
+
+        /* Hover effect */
+        .main:hover input~.checkbox-container {
+            border: 1px solid cyan;
+            color: cyan;
+        }
+
+        /* Active effect */
+        .main input:active~.checkbox-container {
+            border: 1px solid cyan;
+            color: cyan;
+        }
+
+        /* Checked effect */
+        .main input:checked~.checkbox-container {
+            border: 1px solid cyan;
+            color: cyan;
+        }
+
+        /* Checkmark */
+        .checkbox-container::after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Display checkmark when checked */
+        .main input:checked~.checkbox-container::after {
+            display: block;
+        }
+        #question-div{
+          margin-left: 45px;
+        }
+        #question-order{
+          position: relative;
+          display: inline-block;
+          vertical-align: top;
+        }
+        #question-duration{
+          position: relative;
+          display: inline-block;
+          vertical-align: top;
+          margin-left: 20%;
+        }
+        #start-interview{
+            background-color: #1d9b95;
+            color: white;
+            border: none;
+            padding: 5px;
+            width: 150px;
+            transition: 0.3s;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        #go-back{
+            background-color: darkred;
+            color: white;
+            border: none;
+            padding: 5px;
+            width: 75px;
+            transition: 0.3s;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        #buttons{
+          text-align: center;
+          margin: 50px;
+        }
+    </style>
+</head>
+<body>
+<div style="position: relative; margin: 40px;">
+    <div style="position: relative; display: inline-block;">
+        <h1 style="color: rgb(56 123 133)">Custom interview settings</h1>
+    </div>
+    <div style="position: relative; display: inline-block; float: right;">
+        <h1 style="text-align: center; font-size: 40px; position: relative; display: inline-block; margin-right: 20px;">Cambridge Spark</h1>
+        <img style="position: relative; display: inline-block; vertical-align: middle;" src="../static/cambridge_spark_logo.png" height="75" width="75">
+    </div>
+    <div style="margin: 40px; background-color: #044d59; padding: 20px; border-radius: 20px;">
+      <h4>Welcome to the custom interview simulation. Here you will have a chance to practice for your AM2 assessment by being
+      asked questions from the AM2 question bank. In this section, you can customise your interview experience by
+      selecting different options.</h4>
+      <br>
+      <div id="question-div">
+        <div id="question-order">
+          <p>How do you want the questions to be ordered?</p>
+          <label class="main">Randomized
+            <input type="checkbox" class="question-order" value="randomized" name="question-order" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+          <label class="main">Ordered by KSBs
+            <input type="checkbox" class="question-order" value="ordered" name="question-order" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+        </div>
+        <div id="question-duration">
+          <p>What is the maximum time you want to allow for each question?</p>
+          <label class="main">30 seconds
+            <input type="checkbox" class="question-duration" value="30 seconds" name="question-duration" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+          <label class="main">1 minute
+            <input type="checkbox" class="question-duration" value="1 minute" name="question-duration" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+          <label class="main">2 minutes
+            <input type="checkbox" class="question-duration" value="2 minute" name="question-duration" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+          <label class="main">3 minutes
+            <input type="checkbox" class="question-duration" value="3 minute" name="question-duration" onclick="toggleCheckbox(this)">
+            <span class="checkbox-container"></span>
+          </label>
+        </div>
+      </div>
+      <div id="buttons">
+        <button id="go-back">Go back</button>
+        <button id="start-interview">Start Interview</button>
+      </div>
+    </div>
+</div>
+<script>
+  const questionOrderCheckboxes = document.querySelectorAll('input[name="question-order"]');
+  const questionDurationCheckboxes = document.querySelectorAll('input[name="question-duration"]');
+
+  questionOrderCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      questionOrderCheckboxes.forEach(cb => {
+        if (cb !== checkbox) {
+          cb.checked = false;
+        }
+      });
+    });
+  });
+
+  questionDurationCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      questionDurationCheckboxes.forEach(cb => {
+        if (cb !== checkbox) {
+          cb.checked = false;
+        }
+      });
+    });
+  });
+
+  let selectedCheckbox = null;
+  let question_order_value = null;
+  let question_duration_value = null;
+
+  function toggleCheckbox(checkbox) {
+    if (selectedCheckbox !== checkbox) {
+      if (selectedCheckbox && selectedCheckbox.className === checkbox.className) {
+        selectedCheckbox.checked = false;
+      }
+      selectedCheckbox = checkbox;
+    } else {
+      selectedCheckbox = null;
+    }
+    if(checkbox.className === "question-order"){
+      question_order_value = checkIfQuestionOrderBoxTicked();
+    }
+    else if(checkbox.className === "question-duration"){
+      question_duration_value = checkIfQuestionDurationBoxTicked();
+    }
+    checkIfBothBoxesAreTicked();
+  }
+
+  function checkIfQuestionOrderBoxTicked() {
+    const tickedCheckbox = selectedCheckbox;
+    return tickedCheckbox ? tickedCheckbox.value : null;
+  }
+  function checkIfQuestionDurationBoxTicked(){
+    const tickedCheckbox = selectedCheckbox;
+    return tickedCheckbox ? tickedCheckbox.value : null;
+  }
+  function checkIfBothBoxesAreTicked(){
+    if (question_order_value && question_duration_value) {
+      const url = `{{ url_for('start_interview') }}?question_order_value=${question_order_value}&question_duration_value=${question_duration_value}`;
+      document.getElementById("start-interview").onclick = function() {
+        location.href = url;
+      };
+    } else {
+      document.getElementById("start-interview").onclick="";
+    }
+  }
+</script>
+</body>
+</html>

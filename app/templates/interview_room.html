@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('../static/data-science-background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+        #stopwatch {
+          font-size: 48px;
+          text-align: center;
+        }
+        #skip-question{
+            background-color: #1d9b95;
+            color: white;
+            border: none;
+            padding: 5px;
+            width: 150px;
+            transition: 0.3s;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        #end-interview{
+            background-color: darkred;
+            color: white;
+            border: none;
+            padding: 5px;
+            width: 150px;
+            transition: 0.3s;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        #buttons{
+            text-align: center;
+            margin-top: 50px;
+        }
+        p{
+            text-align: center;
+            font-size: 28px;
+        }
+    </style>
+</head>
+<body>
+<div style="position: relative; margin: 40px;">
+    <div style="position: relative; display: inline-block;">
+        <h1 style="color: rgb(56 123 133)">Interview Room</h1>
+    </div>
+    <div style="position: relative; display: inline-block; float: right;">
+        <h1 style="text-align: center; font-size: 40px; position: relative; display: inline-block; margin-right: 20px;">Cambridge Spark</h1>
+        <img style="position: relative; display: inline-block; vertical-align: middle;" src="../static/cambridge_spark_logo.png" height="75" width="75">
+    </div>
+    <div style="margin: 40px; background-color: #044d59; padding: 20px; border-radius: 20px;">
+        <div id="stopwatch">00:30</div>
+        <br>
+        <p id="question"></p>
+        <div id="buttons">
+            <button id="skip-question" onclick="timeInSeconds = 0;">Question Answered</button>
+            <button id="end-interview" onclick="am2_question_bank=[]; timeInSeconds=0;">End Interview</button>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js"></script>
+<script>
+const subscriptionKey = '{{subscriptionKey}}';
+const region = '{{region}}';
+const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, region);
+speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoWav;
+const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
+let audioSource = null; // Store the audio source globally
+
+function convertTextToSpeech(text) {
+    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+        <voice name="en-US-AriaNeural">${text}</voice>
+    </speak>`;
+    synthesizer.speakSsmlAsync(
+        ssml,
+        result => {
+            if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioContext.decodeAudioData(result.audioData, buffer => {
+                    // Stop the previous audio playback
+                    if (audioSource !== null) {
+                        audioSource.stop();
+                    }
+                    audioSource = audioContext.createBufferSource();
+                    audioSource.buffer = buffer;
+                    audioSource.connect(audioContext.destination);
+                    audioSource.start(0);
+                }, error => {
+                    console.error(`Error decoding audio data: ${error}`);
+                });
+            }
+        },
+        error => {
+            console.error(`Error: ${error}`);
+        }
+    );
+}
+</script>
+<script>
+    let am2_question_bank_json = '{{ am2_question_bank|safe }}';
+    let am2_question_bank = JSON.parse(am2_question_bank_json);
+    let index = 0;
+
+    const questionOrderValue = "{{ question_order_value }}";
+    const questionDurationValue = "{{ question_duration_value }}";
+    const stopwatchElement = document.getElementById('stopwatch');
+    let timeInSeconds = questionDurationValue.split(" ")[1] === "seconds" ? questionDurationValue.split(" ")[0] : questionDurationValue.split(" ")[0] * 60;
+    var question = am2_question_bank[index];
+    convertTextToSpeech(question);
+
+    var question_text_index = 0;
+    var speed = 15;
+
+    function typeWriter() {
+      if (question_text_index < question.length) {
+        document.getElementById("question").innerHTML += question.charAt(question_text_index);
+        question_text_index++;
+        setTimeout(typeWriter, speed);
+      }
+    }
+    typeWriter();
+
+    function updateStopwatch() {
+        const minutes = Math.floor(timeInSeconds / 60);
+        const seconds = timeInSeconds % 60;
+        const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        stopwatchElement.textContent = formattedTime;
+        if (timeInSeconds <= 0) {
+            index++;
+            if(index < am2_question_bank.length){
+                document.getElementById("question").innerHTML = "";
+                //document.getElementById("question").innerText = am2_question_bank[index];
+                question = am2_question_bank[index];
+                question_text_index = 0;
+                convertTextToSpeech(question);
+                typeWriter();
+                timeInSeconds = questionDurationValue.split(" ")[1] === "seconds" ? questionDurationValue.split(" ")[0] : questionDurationValue.split(" ")[0] * 60;
+            }
+            else{
+                document.getElementById("question").innerText = "END OF INTERVIEW";
+                document.getElementById("question").style.textAlign = "center";
+                document.getElementById("question").style.fontSize= "30";
+                return;
+            }
+        }
+        timeInSeconds--;
+        setTimeout(updateStopwatch, 1000);
+    }
+    updateStopwatch();
+</script>
+</html>
