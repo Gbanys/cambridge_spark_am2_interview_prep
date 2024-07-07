@@ -55,7 +55,8 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js"></script>
     <script>
-        var ws = new WebSocket("ws://localhost:80/ws");
+        var ws = new WebSocket("ws://20.83.146.118:80/ws");
+        var intervalId; // Variable to store the interval ID
         ws.onopen = function (event) {
             ws.send(JSON.stringify({'status': 'get_all_questions'}));
         };
@@ -87,55 +88,40 @@
                     if (i < txt.length) {
                         childElement.innerHTML += txt.charAt(i);
                         i++;
-                        setTimeout(typeWriter, speed);
                     }
                 }
-
-                typeWriter();
+                intervalId = setInterval(typeWriter, speed);
                 convertTextToSpeech(data.response);
             }
         }
+        let audio;
 
+        function convertTextToSpeech(textInput) {
+            audio = new Audio();
+            fetch('/text-to-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: textInput })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    audio.src = "data:audio/wav;base64," + response.audio;
+                    audio.play();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
         function submitQuestionAndGetLLMResponse(question) {
+            if(audio){
+                audio.pause();
+            }
+            clearInterval(intervalId);
             answer_box = document.getElementById("answer-box");
             answer_box.innerHTML = `<p style="text-align: center; margin: 15px;">${question}</p>`;
             ws.send(JSON.stringify({'status': 'get_llm_response', 'question': question}))
-        }
-
-        const subscriptionKey = '{{subscriptionKey}}';
-        const region = '{{region}}';
-        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, region);
-        speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoWav;
-        const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
-        let audioSource = null; // Store the audio source globally
-
-        function convertTextToSpeech(text) {
-            const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-                <voice name="en-US-AriaNeural">${text}</voice>
-            </speak>`;
-            synthesizer.speakSsmlAsync(
-                ssml,
-                result => {
-                    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        audioContext.decodeAudioData(result.audioData, buffer => {
-                            // Stop the previous audio playback
-                            if (audioSource !== null) {
-                                audioSource.stop();
-                            }
-                            audioSource = audioContext.createBufferSource();
-                            audioSource.buffer = buffer;
-                            audioSource.connect(audioContext.destination);
-                            audioSource.start(0);
-                        }, error => {
-                            console.error(`Error decoding audio data: ${error}`);
-                        });
-                    }
-                },
-                error => {
-                    console.error(`Error: ${error}`);
-                }
-            );
         }
     </script>
 </head>

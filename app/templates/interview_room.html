@@ -60,61 +60,53 @@
         <br>
         <p id="question"></p>
         <div id="buttons">
-            <button id="skip-question" onclick="timeInSeconds = 0;">Question Answered</button>
-            <button id="end-interview" onclick="am2_question_bank=[]; timeInSeconds=0;">End Interview</button>
+            <button id="skip-question" onclick="timeInSeconds = 0; audio.pause();">Question Answered</button>
+            <button id="end-interview" onclick="am2_question_bank=[]; timeInSeconds=0; stopAudioPlayback();">End Interview</button>
         </div>
     </div>
 </div>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js"></script>
 <script>
-const subscriptionKey = '{{subscriptionKey}}';
-const region = '{{region}}';
-const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, region);
-speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoWav;
-const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
-let audioSource = null; // Store the audio source globally
+let audio;
 
-function convertTextToSpeech(text) {
-    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-        <voice name="en-US-AriaNeural">${text}</voice>
-    </speak>`;
-    synthesizer.speakSsmlAsync(
-        ssml,
-        result => {
-            if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                audioContext.decodeAudioData(result.audioData, buffer => {
-                    // Stop the previous audio playback
-                    if (audioSource !== null) {
-                        audioSource.stop();
-                    }
-                    audioSource = audioContext.createBufferSource();
-                    audioSource.buffer = buffer;
-                    audioSource.connect(audioContext.destination);
-                    audioSource.start(0);
-                }, error => {
-                    console.error(`Error decoding audio data: ${error}`);
-                });
-            }
+function convertTextToSpeech(textInput) {
+    audio = new Audio();
+    fetch('/text-to-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         },
-        error => {
-            console.error(`Error: ${error}`);
-        }
-    );
+        body: JSON.stringify({ text: textInput })
+    })
+        .then(response => response.json())
+        .then(response => {
+            audio.src = "data:audio/wav;base64," + response.audio;
+            audio.play();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
 }
 </script>
 <script>
     let am2_question_bank_json = '{{ am2_question_bank|safe }}';
     let am2_question_bank = JSON.parse(am2_question_bank_json);
-    let index = 0;
-
     const questionOrderValue = "{{ question_order_value }}";
+    let index = 0;
+    var intervalId;
+
+    if(questionOrderValue === 'ordered'){
+        index = 0;
+    }
+    else{
+        index = Math.floor(Math.random() * am2_question_bank.length);
+    }
+
     const questionDurationValue = "{{ question_duration_value }}";
     const stopwatchElement = document.getElementById('stopwatch');
     let timeInSeconds = questionDurationValue.split(" ")[1] === "seconds" ? questionDurationValue.split(" ")[0] : questionDurationValue.split(" ")[0] * 60;
     var question = am2_question_bank[index];
-    convertTextToSpeech(question);
 
     var question_text_index = 0;
     var speed = 15;
@@ -123,10 +115,9 @@ function convertTextToSpeech(text) {
       if (question_text_index < question.length) {
         document.getElementById("question").innerHTML += question.charAt(question_text_index);
         question_text_index++;
-        setTimeout(typeWriter, speed);
       }
     }
-    typeWriter();
+    intervalId = setInterval(typeWriter, speed)
 
     function updateStopwatch() {
         const minutes = Math.floor(timeInSeconds / 60);
@@ -134,7 +125,13 @@ function convertTextToSpeech(text) {
         const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         stopwatchElement.textContent = formattedTime;
         if (timeInSeconds <= 0) {
-            index++;
+            if(questionOrderValue === 'ordered'){
+                index++;
+            }
+            else{
+                am2_question_bank.splice(am2_question_bank.indexOf(index), 1);
+                index = Math.floor(Math.random() * am2_question_bank.length);
+            }
             if(index < am2_question_bank.length){
                 document.getElementById("question").innerHTML = "";
                 //document.getElementById("question").innerText = am2_question_bank[index];

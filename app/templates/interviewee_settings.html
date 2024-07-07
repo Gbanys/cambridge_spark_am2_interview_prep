@@ -95,24 +95,30 @@
           margin-left: 20%;
         }
         #start-interview{
-            background-color: #1d9b95;
+            background-color: #3ac9c3;
             color: white;
             border: none;
-            padding: 5px;
-            width: 150px;
+            padding: 10px;
+            width: 200px;
             transition: 0.3s;
             margin: 20px;
             border-radius: 10px;
+        }
+        #start-interview:hover{
+            background-color: #00ffb7;
         }
         #go-back{
             background-color: darkred;
             color: white;
             border: none;
-            padding: 5px;
-            width: 75px;
+            padding: 10px;
+            width: 100px;
             transition: 0.3s;
             margin: 20px;
             border-radius: 10px;
+        }
+        #go-back:hover{
+            background-color: #f26c4f;
         }
         #buttons{
           text-align: center;
@@ -167,7 +173,7 @@
         </div>
       </div>
       <div id="buttons">
-        <button id="go-back">Go back</button>
+        <button id="go-back" onclick="location.href=`{{ url_for('return_home_page')}}`">Go back</button>
         <button id="start-interview">Start Interview</button>
       </div>
     </div>

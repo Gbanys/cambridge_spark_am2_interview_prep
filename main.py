@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from pathlib import Path
@@ -5,11 +6,20 @@ import uvicorn
 from fastapi import FastAPI, Request, WebSocket, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import azure.cognitiveservices.speech as speechsdk
 
 from llm import generate_response
 from question_bank import am2_question_bank
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount(
     "/static",
@@ -34,13 +44,27 @@ async def return_home_page(request: Request):
 @app.get("/llm_interview")
 async def return_interview_page(request: Request):
     return templates.TemplateResponse(
-        "interviewer.html",
-        context={
-            "subscriptionKey" : os.environ["SPEECH_SUBSCRIPTION_KEY"],
-            "region" : os.environ["SPEECH_REGION"],
-            "request": request,
-        }
+            "interviewer.html",
+            context={
+                "request": request,
+            }
+        )
+
+
+@app.post("/text-to-speech")
+async def text_to_speech(request: Request):
+    retrieved_json = await request.json()
+    text = retrieved_json["text"]
+    speech_config = speechsdk.SpeechConfig(
+        subscription=os.environ["SPEECH_SUBSCRIPTION_KEY"],
+        region=os.environ["SPEECH_REGION"]
     )
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+    audio_data = synthesizer.speak_text_async(text).get().audio_data
+    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+
+    return {"audio": audio_base64}
+
 
 @app.get("/llm_interview/settings")
 async def return_interviee_settings_page(request: Request):
@@ -60,8 +84,6 @@ async def start_interview(request: Request, question_order_value, question_durat
             "question_order_value": question_order_value,
             "question_duration_value": question_duration_value,
             "am2_question_bank" : json.dumps(am2_question_bank),
-            "subscriptionKey" : os.environ["SPEECH_SUBSCRIPTION_KEY"],
-            "region" : os.environ["SPEECH_REGION"],
         }
     )
 
